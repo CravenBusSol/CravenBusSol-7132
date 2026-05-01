@@ -2,7 +2,7 @@
 
 ## Overview
 
-`packages/mobile` is an Expo + React Native app with expo-router (file-based routing), `hono/client` for typed API calls, and `@tanstack/react-query` for queries and mutations. The API URL is configured via `extra.apiUrl` in `app.json`. When the port in `app.config.json` changes, update `packages/mobile/app.json` → `expo.extra.apiUrl` to match.
+`packages/mobile` is an Expo + React Native app with expo-router (file-based routing), `hono/client` for typed API calls, and `@tanstack/react-query` for queries and mutations.
 
 When creating an app, update `app.json` → `expo.name` and `expo.slug` to the app's name (e.g. `"name": "My App"`, `"slug": "my-app"`).
 
@@ -20,7 +20,7 @@ packages/mobile/
   lib/
     api.ts                   Typed API client
   assets/                    App icons, splash screen
-  app.json                   Expo config (extra.apiUrl must match app.config.json port)
+  app.json                   Expo config
   eas.json                   EAS build profiles with env vars
   env.d.ts                   Type declarations for process.env
   web/
@@ -108,11 +108,9 @@ export default function TabLayout() {
 }
 ```
 
-## API URL Setup
+## Port Setup
 
-**Required during app creation:**
-
-1. Update `packages/mobile/package.json` — add `--port <mobile port from app.config.json>` to all scripts:
+**Required during app creation:** Update `packages/mobile/package.json` — add `--port <mobile port from app.config.json>` to all scripts:
 
 ```json
 {
@@ -122,18 +120,6 @@ export default function TabLayout() {
     "android": "expo start --android --port <services.mobile.port>",
     "ios": "expo start --ios --port <services.mobile.port>",
     "web": "expo start --web --port <services.mobile.port>"
-  }
-}
-```
-
-2. Set `app.json` → `expo.extra.apiUrl` to the **website** port from `app.config.json`:
-
-```json
-{
-  "expo": {
-    "extra": {
-      "apiUrl": "http://localhost:<services.website.port>"
-    }
   }
 }
 ```

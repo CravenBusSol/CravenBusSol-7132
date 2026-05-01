@@ -12,7 +12,7 @@ Monorepo: Bun workspaces + Turborepo.
 - **Web:** Vite 7 dev server — serves both the React frontend (`/*`) and the Hono API (`/api/*` via `vite/plugins/hono-dev-plugin.ts`) from a single port in `packages/web`
 - **API:** Hono with `.basePath('api')`, Drizzle ORM + Turso (SQLite) — source in `packages/web/src/api/`
 - **Web Frontend:** React 19 + Wouter + Tailwind CSS 4, bundled by Vite — source in `packages/web/src/web/`
-- **Mobile:** Expo + React Native + expo-router — API URL configured via `extra.apiUrl` in `app.json` (must match `app.config.json` port)
+- **Mobile:** Expo + React Native + expo-router
 - **Desktop:** Electron shell + Vite (loads the web app from the server, exposes native APIs via IPC) — Vite/Electron ports come from `app.config.json`
 
 ## App Config
@@ -55,7 +55,6 @@ Document design direction in `design.md` inside the website project directory be
 - **Typed client paths include `api/`** (e.g., `"api/health"`). `baseUrl` is just the origin — no `/api`.
 - **Desktop loads the web app** — no separate renderer. Gate desktop UI with `useDesktop()` / `window.electronAPI`. Only create a separate renderer if explicitly asked.
 - **Vite loads `.env` automatically** — no dotenv needed. Always use `.env`, never `.env.local`. Vite also auto-sets `BETTER_AUTH_URL` from `app.config.json` port.
-- **Mobile API URL** comes from `extra.apiUrl` in `app.json`. Always set this port to match `app.config.json`.
 - **Never hardcode ports** — always read from `app.config.json`. Import it as `import appConfig from "../../app.config.json"` and use `appConfig.services.website.port`.
 - **Before starting a dev server**, kill any process already running on that port: `lsof -ti:<port> | xargs kill -9 2>/dev/null`.
 
