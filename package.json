@@ -7,7 +7,7 @@
   ],
   "scripts": {
     "dev": "cd packages/web && bunx vite",
-    "dev:desktop": "turbo dev --filter=@template/desktop",
+    "dev:desktop": "cd packages/desktop && bunx vite",
     "dev:mobile": "cd packages/mobile && bunx expo start",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
