@@ -49,6 +49,7 @@ Document design direction in `design.md` inside the website project directory be
 
 ### Rules
 
+- Use `bun run dev`, `bun run dev:mobile`, `bun run dev:desktop` from root to start the development servers. For custom ports use `bun run dev --port <port>`.
 - **All API routes must be chained** on the same `app` instance in `packages/web/src/api/index.ts`. Breaking the chain breaks type inference.
 - **Always pass explicit status codes** — `c.json(data, 200)`, never `c.json(data)`. Without this, the typed RPC client resolves response types to `never`.
 - **Routes should be defined without `/api` prefix.** `.basePath('api')` adds it. `.get("/health", ...)` → `/api/health`.
