@@ -44,8 +44,9 @@ Document design direction in `design.md` inside the website project directory be
 
 1. Run preflight.
 2. Call `app_init` with absolute `app_path`, `name`, `description`. **Do NOT create the directory beforehand** — `app_init` creates it and fails if it already exists.
-3. Build API routes, database schema, pages/screens, and ui components for the app.
-4. Call `deliver` with `type: app`, app folder path at index 0.
+3. Write `design.md` in the project root with the design direction from preflight (fonts, colors, spacing, style). This file guides all UI code for consistency.
+4. Build API routes, database schema, pages/screens, and ui components for the app.
+5. Call `deliver` with required parameters for the apps.
 
 ### Rules
 
