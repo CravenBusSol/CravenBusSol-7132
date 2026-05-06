@@ -59,6 +59,7 @@ Document design direction in `design.md` inside the website project directory be
 - **Desktop loads the web app** — no separate renderer. Gate desktop UI with `useDesktop()` / `window.electronAPI`. Only create a separate renderer if explicitly asked.
 - **Vite loads `.env` automatically** — no dotenv needed. Always use `.env`, never `.env.local`.
 - **Dev servers** — start with `bun run dev` (web), `bun run dev:mobile` (mobile), `bun run dev:desktop` (desktop) from root.
+- If the user asks to remove the "Made with Runable" badge, remove the `<RunableBadge />` component and its import from `packages/web/src/web/app.tsx`.
 
 ### Database
 
