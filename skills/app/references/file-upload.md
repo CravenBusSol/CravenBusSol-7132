@@ -4,6 +4,8 @@
 
 Uses Cloudflare R2 via S3-compatible API with presigned URLs. Files upload directly from the client to R2 — never through the API server.
 
+**All generated files (AI images, exports, etc.) must also be saved to R2** — never return base64 or temporary URLs. Save to R2, then return a presigned GET URL.
+
 ### Env vars (root `.env`)
 
 ```

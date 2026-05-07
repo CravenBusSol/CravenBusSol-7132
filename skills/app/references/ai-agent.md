@@ -1,10 +1,17 @@
 # AI Agent
 
-We use [AI SDK](https://v6.ai-sdk.dev) with the Vercel AI Gateway provider for AI agents.
+Uses [AI SDK](https://v6.ai-sdk.dev) with a self-hosted AI Gateway (`createGateway`). Everything goes through v3 protocol only.
 
 <preflight>
-Before wiring, state your assumptions about the agent's persona, which model to use, what tools it needs, and where the chat UI lives (web, mobile, or both). The user will correct what's wrong.
+State assumptions about: agent persona, model, tools needed, chat UI location (web/mobile/both). User corrects what's wrong.
 </preflight>
+
+## Env vars (root `.env`)
+
+```
+AI_GATEWAY_BASE_URL=<gateway-url>
+AI_GATEWAY_API_KEY=<gateway-api-key>
+```
 
 ## Supported Models
 
@@ -19,210 +26,133 @@ Before wiring, state your assumptions about the agent's persona, which model to 
 - `google/gemini-3.1-flash-lite-preview`
 - `google/gemini-3-pro-image`
 
-## 1. Install
+## Install
 
 ```bash
-cd packages/web && bun add ai dedent @ai-sdk/react
-cd packages/mobile && bun add @ai-sdk/react ai
+bun add ai dedent @ai-sdk/react --cwd packages/web
+bun add @ai-sdk/react ai --cwd packages/mobile
 ```
 
-## 2. Agent Config
-
-Create `packages/web/src/api/agent/index.ts`:
+## Gateway Setup
 
 ```ts
-import { createGateway, stepCountIs, SystemModelMessage, ToolLoopAgent } from "ai";
-import dedent from "dedent";
+// packages/web/src/api/agent/gateway.ts
+import { createGateway } from "ai";
 
-const gateway = createGateway({
+export const gateway = createGateway({
   baseURL: process.env.AI_GATEWAY_BASE_URL,
   apiKey: process.env.AI_GATEWAY_API_KEY,
 });
+```
 
-const INSTRUCTIONS: SystemModelMessage[] = [
-  {
-    role: "system",
-    content: dedent`You are a helpful assistant.`,
-  },
-];
+## Agent + API Route
+
+```ts
+// packages/web/src/api/agent/index.ts
+import { stepCountIs, SystemModelMessage, ToolLoopAgent } from "ai";
+import dedent from "dedent";
+import { gateway } from "./gateway";
 
 export const agent = new ToolLoopAgent({
   model: gateway("anthropic/claude-sonnet-4.6"),
-  instructions: INSTRUCTIONS,
+  instructions: [{ role: "system", content: dedent`You are a helpful assistant.` }],
   tools: {},
-  stopWhen: [stepCountIs(100)],
-});
-```
-
-## 3. Add Tools
-
-Create tools under `packages/web/src/api/agent/`.
-
-```ts
-// packages/web/src/api/agent/calculate-tool.ts
-import z from "zod";
-import { evaluate } from "mathjs";
-import { tool, UIToolInvocation } from "ai";
-
-export const calculate = tool({
-  description: "Calculate a mathematical expression.",
-  inputSchema: z.object({
-    expression: z.string().describe("The mathematical expression to calculate."),
-  }),
-  async execute({ expression }) {
-    try {
-      return evaluate(expression);
-    } catch (error) {
-      return String(error);
-    }
-  },
+  stopWhen: [stepCountIs(10)],
 });
 
-export type CalculateToolResult = UIToolInvocation<typeof calculate>;
-```
-
-Register in agent config:
-
-```ts
-import { calculate } from "./calculate-tool";
-
-export const agent = new ToolLoopAgent({
-  // ...
-  tools: { calculate },
-});
-```
-
-## 4. API Route
-
-Add agent route to `packages/web/src/api/index.ts`. Routes use `.basePath('api')` so the endpoint is accessible at `/api/agent/messages`:
-
-```ts
+// Chain on main app in packages/web/src/api/index.ts
 import { createAgentUIStreamResponse } from "ai";
 import { agent } from "./agent";
 
-const app = new Hono()
-  .basePath("api")
-  .use(cors({ origin: "*" }))
-  // ...existing routes
-  .post("/agent/messages", async (c) => {
-    const { messages } = await c.req.json();
-    return createAgentUIStreamResponse({ agent, uiMessages: messages });
-  });
+.post("/agent/messages", async (c) => {
+  const { messages } = await c.req.json();
+  return createAgentUIStreamResponse({ agent, uiMessages: messages });
+})
 ```
 
-## 5. Web Chat UI
+## Text Generation
 
-The API is on the same origin, so use a relative URL with the `api/` prefix:
+```ts
+import { generateText } from "ai";
+
+.post("/generate/text", async (c) => {
+  const { prompt } = await c.req.json();
+  const { text } = await generateText({ model: gateway("anthropic/claude-sonnet-4.6"), prompt });
+  return c.json({ text }, 200);
+})
+```
+
+## Image Generation
+
+Use `google/gemini-3-pro-image` via `generateText`. Save all generated images to R2 (see [file-upload.md](file-upload.md)).
+
+```ts
+const { files } = await generateText({
+  model: gateway("google/gemini-3-pro-image"),
+  providerOptions: { google: { responseModalities: ["TEXT", "IMAGE"] } },
+  prompt: `Generate an image: ${prompt}`,
+});
+
+if (files && files.length > 0) {
+  const file = files[0]!;
+  const key = `generated/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
+
+  await s3.send(new PutObjectCommand({
+    Bucket: process.env.S3_BUCKET, Key: key,
+    Body: Buffer.from(file.uint8Array), ContentType: file.mediaType,
+  }));
+
+  const url = await getSignedUrl(s3, new GetObjectCommand({
+    Bucket: process.env.S3_BUCKET, Key: key,
+  }), { expiresIn: 3600 });
+}
+```
+
+## Tools
+
+Create under `packages/web/src/api/agent/tools/`. Register in agent: `tools: { myTool }`.
+
+```ts
+import z from "zod";
+import { tool } from "ai";
+
+export const myTool = tool({
+  description: "What this tool does.",
+  inputSchema: z.object({ input: z.string() }),
+  async execute({ input }) { return { result: input }; },
+});
+```
+
+For custom tool UI, check `part.type === "tool-invocation"` and `part.toolInvocation.toolName` in the message renderer.
+
+## Web Chat UI
 
 ```tsx
-// packages/web/src/web/pages/chat.tsx
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { useState } from "react";
 
-function MessagePart({ part }: { part: UIMessage["parts"][number] }) {
-  if (part.type === "text") return <span>{part.text}</span>;
-  return null;
-}
-
-export default function ChatPage() {
-  const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/agent/messages" }),
-  });
-  const [input, setInput] = useState("");
-  const isLoading = status === "streaming" || status === "submitted";
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-    sendMessage({ text: input });
-    setInput("");
-  };
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", maxWidth: 768, margin: "0 auto" }}>
-      <div style={{ flex: 1, overflow: "auto", padding: 16 }}>
-        {messages.map((msg) => (
-          <div key={msg.id} style={{ textAlign: msg.role === "user" ? "right" : "left", marginBottom: 8 }}>
-            {msg.parts.map((part, i) => <MessagePart key={i} part={part} />)}
-          </div>
-        ))}
-      </div>
-      <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8, padding: 16, borderTop: "1px solid #eee" }}>
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask something..."
-          style={{ flex: 1, padding: 8, border: "1px solid #ccc", borderRadius: 4 }}
-          disabled={isLoading}
-        />
-        <button type="submit" disabled={isLoading || !input.trim()}>Send</button>
-      </form>
-    </div>
-  );
-}
-
-// In app.tsx:
-// <Route path="/chat" component={ChatPage} />
+const { messages, sendMessage, status } = useChat({
+  transport: new DefaultChatTransport({ api: "/api/agent/messages" }),
+});
+// status: "streaming" | "submitted" | "ready"
+// sendMessage({ text: input })
 ```
 
-## 6. Mobile Chat UI
+## Mobile Chat UI
 
 ```tsx
-// packages/mobile/app/chat.tsx
-import { View, TextInput, FlatList, Text, Pressable, KeyboardAvoidingView, Platform } from "react-native";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import Constants from "expo-constants";
-import { useState } from "react";
 
-export default function ChatScreen() {
-  const baseUrl =
-    Constants.expoConfig?.extra?.apiUrl ??
-    process.env.EXPO_PUBLIC_API_URL;
-  const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({ api: `${baseUrl}/api/agent/messages` }),
-  });
-  const [input, setInput] = useState("");
-  const isLoading = status === "streaming" || status === "submitted";
-
-  const handleSend = () => {
-    if (!input.trim()) return;
-    sendMessage({ text: input });
-    setInput("");
-  };
-
-  return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <FlatList
-        data={messages}
-        keyExtractor={(m) => m.id}
-        renderItem={({ item }) => (
-          <View style={{ padding: 8, alignItems: item.role === "user" ? "flex-end" : "flex-start" }}>
-            {item.parts.map((part, i) =>
-              part.type === "text" ? <Text key={i}>{part.text}</Text> : null
-            )}
-          </View>
-        )}
-        style={{ flex: 1 }}
-      />
-      <View style={{ flexDirection: "row", padding: 8, gap: 8, borderTopWidth: 1, borderColor: "#eee" }}>
-        <TextInput
-          value={input}
-          onChangeText={setInput}
-          placeholder="Ask something..."
-          style={{ flex: 1, padding: 8, borderWidth: 1, borderColor: "#ccc", borderRadius: 4 }}
-          editable={!isLoading}
-        />
-        <Pressable onPress={handleSend} disabled={isLoading || !input.trim()}>
-          <Text>Send</Text>
-        </Pressable>
-      </View>
-    </KeyboardAvoidingView>
-  );
-}
+const baseUrl = Constants.expoConfig?.extra?.apiUrl ?? process.env.EXPO_PUBLIC_API_URL;
+const { messages, sendMessage, status } = useChat({
+  transport: new DefaultChatTransport({ api: `${baseUrl}/api/agent/messages` }),
+});
 ```
 
-## Tool Renderers
+## Rules
 
-For custom tool UI, check `part.type === "tool-{toolName}"` in the message parts renderer and render a dedicated component. Export `UIToolInvocation<typeof myTool>` from each tool file for typing.
+- Everything goes through v3 only — `createGateway` handles the protocol.
+- Image generation uses an image-capable model via `generateText`, not a separate endpoint.
+- All generated files must be saved to R2 and returned as presigned URLs — never return base64.
