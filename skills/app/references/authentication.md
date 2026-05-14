@@ -32,6 +32,7 @@ Create `packages/web/src/api/auth.ts`.
 ```ts
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { bearer } from "better-auth/plugins";
 import { db } from "./database";
 
 export const auth = betterAuth({
@@ -41,8 +42,11 @@ export const auth = betterAuth({
   emailAndPassword: { enabled: true },
   secret: process.env.BETTER_AUTH_SECRET,
   trustedOrigins: ["*"],
+  plugins: [bearer()],
 });
 ```
+
+The `bearer()` plugin enables token-based authentication via `Authorization: Bearer <token>` headers. This is required because the app runs inside cross-origin iframes where browsers block third-party cookies. The plugin translates bearer tokens into sessions transparently — no extra server-side handling needed.
 
 `baseURL` is set from `WEBSITE_URL` env var. Required for OAuth callbacks and production. Do **not** import JSON config files in this file — the Better Auth CLI uses jiti which cannot resolve them.
 
@@ -73,7 +77,11 @@ import { cors } from "hono/cors";
 import { auth } from "./auth";
 
 const app = new Hono()
-  .use(cors({ origin: "*" }))
+  .use(cors({
+    origin: (origin) => origin ?? "*",
+    credentials: true,
+    exposeHeaders: ["set-auth-token"],
+  }))
   .on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw))
   .basePath("api")
   .get("/health", (c) => c.json({ status: "ok" }, 200));
@@ -81,6 +89,8 @@ const app = new Hono()
 export type AppType = typeof app;
 export default app;
 ```
+
+**Important:** `exposeHeaders: ["set-auth-token"]` is required so the browser allows JavaScript to read the bearer token from the response header. Without this, the token capture will silently fail.
 
 ## 5. Auth Middleware
 
@@ -107,21 +117,54 @@ export const requireAuth = createMiddleware(async (c, next) => {
 
 Create `packages/web/src/web/lib/auth.ts`:
 
+The web client uses bearer token authentication. On sign-in/sign-up, capture the token from the `set-auth-token` response header and store it in `localStorage`. Configure `fetchOptions.auth` so every subsequent request sends the token automatically via the `Authorization: Bearer` header.
+
 ```ts
 import { createAuthClient } from "better-auth/react";
+
+const TOKEN_KEY = "bearer_token";
 
 export const authClient = createAuthClient({
   baseURL: window.location.origin,
   basePath: "/api/auth",
+  fetchOptions: {
+    auth: {
+      type: "Bearer",
+      token: () => localStorage.getItem(TOKEN_KEY) ?? "",
+    },
+  },
 });
+
+/** Call in onSuccess of signIn/signUp to capture the bearer token */
+export function captureToken(ctx: { response: Response }) {
+  const token = ctx.response.headers.get("set-auth-token");
+  if (token) localStorage.setItem(TOKEN_KEY, token);
+}
+
+/** Clear stored token on sign-out */
+export function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+}
 ```
 
 Usage:
 
 ```tsx
-await authClient.signUp.email({ name, email, password });
-await authClient.signIn.email({ email, password });
+// Sign up
+await authClient.signUp.email({
+  name, email, password,
+}, { onSuccess: captureToken });
+
+// Sign in
+await authClient.signIn.email({
+  email, password,
+}, { onSuccess: captureToken });
+
+// Sign out
 await authClient.signOut();
+clearToken();
+
+// Session hook (works automatically — bearer token sent on every request)
 const { data: session, isPending } = authClient.useSession();
 ```
 
@@ -129,9 +172,36 @@ const { data: session, isPending } = authClient.useSession();
 
 Create `packages/mobile/lib/auth.ts`:
 
+Mobile uses bearer tokens with `expo-secure-store` on native (encrypted, not accessible to other apps) and falls back to `localStorage` on Expo Web. Install SecureStore first: `cd packages/mobile && bun add expo-secure-store`.
+
+`expo-secure-store` does not support web — calling it on web will throw. Use `Platform.OS` to branch between `localStorage` (web) and `SecureStore` (native). Lazy `require()` prevents the SecureStore import from crashing on web.
+
 ```ts
 import { createAuthClient } from "better-auth/react";
+import { Platform } from "react-native";
 import Constants from "expo-constants";
+
+const TOKEN_KEY = "bearer_token";
+
+const isWeb = Platform.OS === "web";
+
+function getToken(): string {
+  if (isWeb) return localStorage.getItem(TOKEN_KEY) ?? "";
+  const SecureStore = require("expo-secure-store");
+  return SecureStore.getItem(TOKEN_KEY) ?? "";
+}
+
+function setToken(token: string) {
+  if (isWeb) return localStorage.setItem(TOKEN_KEY, token);
+  const SecureStore = require("expo-secure-store");
+  SecureStore.setItem(TOKEN_KEY, token);
+}
+
+function removeToken() {
+  if (isWeb) return localStorage.removeItem(TOKEN_KEY);
+  const SecureStore = require("expo-secure-store");
+  SecureStore.deleteItemAsync(TOKEN_KEY);
+}
 
 const baseURL =
   Constants.expoConfig?.extra?.apiUrl ??
@@ -140,7 +210,24 @@ const baseURL =
 export const authClient = createAuthClient({
   baseURL,
   basePath: "/api/auth",
+  fetchOptions: {
+    auth: {
+      type: "Bearer",
+      token: () => getToken(),
+    },
+  },
 });
+
+/** Call in onSuccess of signIn/signUp to capture the bearer token */
+export function captureToken(ctx: { response: Response }) {
+  const token = ctx.response.headers.get("set-auth-token");
+  if (token) setToken(token);
+}
+
+/** Clear stored token on sign-out */
+export function clearToken() {
+  removeToken();
+}
 ```
 
 ## 8. Protected Routes
