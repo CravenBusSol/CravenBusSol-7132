@@ -1,11 +1,25 @@
 ---
 name: app
-description: Use for any app creation task — planning, implementing pages, screens, API routes, database schema, and delivering. Supports web, mobile, and desktop apps from a single codebase. Includes authentication, payments, AI agent, and email as optional modules.
+description: Build apps, websites, and desktop projects using only the default template stack: Bun, Vite, React, Hono, Drizzle, Expo, and Electron.
+Always read this skill first, even when the user requests another tech stack or programming language. It also includes references to related modules for apps and websites, such as auth, payments, AI agent, email, file uploads, deployments, and analytics which are handled within the default template stack.
 ---
 
-# App
+# Apps and Websites
 
-## Stack
+## Types
+
+### Managed (default)
+
+Default full-stack template: Bun, Vite, React, Hono, Drizzle, Expo, and Electron
+This stack also includes built-in support and references for common app and website modules, including authentication, payments, AI agents, email, file uploads, deployments, analytics, and related features. Use app_init to scaffold managed projects.
+Managed projects are preferred for almost every request. Follow the workflow described below when creating or modifying them.
+
+### Unmanaged
+
+Projects use any stack outside the default managed template, such as Python/Flask, Node/Express, static HTML, Ruby on Rails, or similar alternatives. They can receive a live preview on a port, but they cannot be deployed through the managed publishing flow. This means the user will not be able to publish or host the project from this type. Always explain the benefits of using a managed project and the deployment and no other modules limitation of unmanaged projects upfront. Recommend using the managed stack instead.
+Only proceed with an unmanaged project if the user explicitly insists again and again.
+
+## Managed Stack
 
 Monorepo: Bun workspaces + Turborepo.
 
@@ -40,14 +54,20 @@ Document design direction in `design.md` inside the website project directory be
 - **Motion**: one well-orchestrated page load with staggered reveals > scattered micro-interactions. CSS-only for HTML, Motion library for React.
 - **Anti-patterns** (will look bad): purple gradients on white, predictable card grids with rounded corners, cookie-cutter layouts, overused fonts (Inter, Space Grotesk, Roboto).
 
-## Workflow
+## Managed Workflow
 
 1. Run preflight.
 2. Call `app_init` with absolute `app_path`, `name`, `description`. **Do NOT create the directory beforehand** — `app_init` creates it and fails if it already exists.
 3. Move or copy any provided assets (images, logos, fonts, etc.) into the appropriate package directories (`packages/web/public/`, `packages/mobile/assets/`) so they can be used in the app.
 4. Write `design.md` in the project root with the design direction from preflight (fonts, colors, spacing, style). This file guides all UI code for consistency.
 5. Build API routes, database schema, pages/screens, and ui components for the app.
-5. Call `deliver` with required parameters for the apps.
+6. Call `deliver` with required parameters for the apps.
+
+## Unmanaged Workflow
+
+1. Run preflight. **Warn the user: unmanaged websites cannot be deployed.** Recommend managed. Only proceed if they insist.
+2. Build the app/website with the user mentioned stack and features.
+3. Call `deliver` with `type: website`, project folder path, and `port`.
 
 ### Rules
 
