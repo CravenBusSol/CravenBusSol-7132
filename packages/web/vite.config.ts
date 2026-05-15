@@ -20,7 +20,8 @@ export default defineConfig(({ mode }) => {
 		},
 		server: {
 			allowedHosts: true,
-			hmr: { overlay: false, }
+			hmr: { overlay: false, },
+			cors: false
 		}
 	};
 });
