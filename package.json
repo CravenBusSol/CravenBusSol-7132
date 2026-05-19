@@ -10,6 +10,8 @@
     "dev:desktop": "cd packages/desktop && bunx vite",
     "dev:mobile": "cd packages/mobile && bunx expo start",
     "build": "turbo build",
+    "lint": "oxlint . --deny-warnings --no-error-on-unmatched-pattern",
+    "lint:fix": "oxlint . --fix --deny-warnings --no-error-on-unmatched-pattern",
     "typecheck": "turbo typecheck",
     "db:generate": "turbo db:generate",
     "db:migrate": "turbo db:migrate",
@@ -19,6 +21,7 @@
   "devDependencies": {
     "@tursodatabase/api": "^1.9.2",
     "@types/bun": "latest",
+    "oxlint": "^1.66.0",
     "turbo": "^2"
   },
   "peerDependencies": {

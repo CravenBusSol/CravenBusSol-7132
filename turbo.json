@@ -10,6 +10,9 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "dist-electron/**", ".expo/**"]
     },
+    "lint": {
+      "outputs": []
+    },
     "typecheck": {
       "dependsOn": ["^typecheck"],
       "outputs": []
