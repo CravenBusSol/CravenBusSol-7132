@@ -54,19 +54,6 @@ The desktop app has no separate renderer by default. It loads the web app from `
 
 Dev servers are started and managed automatically — no need to run them manually.
 
-For a production-like local run, build the web app and start it under PM2. The start command replaces any existing PM2 process for this app, so only one instance runs at a time.
-
-```sh
-bun run build
-bun run start
-```
-
-Stop the PM2 process with:
-
-```sh
-bun run stop
-```
-
 ## Database
 
 ```sh

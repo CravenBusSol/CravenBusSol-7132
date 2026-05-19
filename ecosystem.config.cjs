@@ -9,9 +9,6 @@ module.exports = {
       instances: 1,
       autorestart: true,
       restart_delay: 1000,
-      env: {
-        NODE_ENV: "production",
-      },
     },
   ],
 };
