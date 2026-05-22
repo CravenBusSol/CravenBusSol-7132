@@ -1,6 +1,6 @@
 ---
 name: app
-description: "Build apps, websites, and desktop projects using only the default template stack: Bun, Vite, React, Hono, Drizzle, Expo, and Electron. Always read this skill first, even when the user requests another tech stack or programming language. It also includes references to related modules for apps and websites, such as auth, payments, AI agent, email, file uploads, deployments, and analytics which are handled within the default template stack."
+description: "Build apps(mobile apps), websites, and desktop projects using only the default template stack: Bun, Vite, React, Hono, Drizzle, Expo, and Electron. Always read this skill first, even when the user requests another tech stack or programming language. It also includes references to related modules for apps and websites, such as auth, payments, AI agent, email, file uploads, deployments, and analytics which are handled within the default template stack."
 ---
 
 # Apps and Websites
@@ -36,7 +36,7 @@ Typed end-to-end: `packages/web` exports `AppType` from `src/api/index.ts`, all 
 
 ## Preflight
 
-1. Ask questions: purpose, platforms(mobile, web, desktop) need templates (MUST confirm — assume YES if unclear), industry, style, sections, features.
+1. Ask questions: purpose, platforms(mobile, web, desktop) need templates (MUST confirm — assume YES if unclear), industry, style, sections, features. **When the user says "app" without specifying a platform, default to mobile app. If ambiguous, confirm whether they mean mobile or web.**
 2. If templates wanted, call `show_templates` with relevant `query` and `type: website`. This must be its own standalone call.
 3. Form a plan. State assumptions as decisions — the user corrects what's wrong. Include: what's being built, which packages are touched, API routes, database tables, screens/pages, files to create/modify. Follow brand colors/fonts/logo/vibe if available. Template is for visual style and layout only.
 
