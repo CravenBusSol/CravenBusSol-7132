@@ -28,6 +28,17 @@ export default function Footer() {
             </div>
           </div>
           <div>
+            <h4 style={{ color: "#fff", fontWeight: 600, fontSize: 14, marginBottom: 14, marginTop: 0 }}>Knowledge Centre</h4>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <Link to="/knowledge-centre/air-source-heat-pump" style={{ color: "#9CA3AF", fontSize: 13 }}>Air Source Heat Pumps</Link>
+              <Link to="/knowledge-centre/solar-pv" style={{ color: "#9CA3AF", fontSize: 13 }}>Solar PV</Link>
+              <Link to="/knowledge-centre/battery-storage" style={{ color: "#9CA3AF", fontSize: 13 }}>Battery Storage</Link>
+              <Link to="/knowledge-centre/ev-charger" style={{ color: "#9CA3AF", fontSize: 13 }}>EV Chargers</Link>
+              <Link to="/knowledge-centre/insulation" style={{ color: "#9CA3AF", fontSize: 13 }}>Insulation</Link>
+              <Link to="/knowledge-centre" style={{ color: "var(--color-primary-light, #6abf2e)", fontSize: 13, fontWeight: 600 }}>View all guides →</Link>
+            </div>
+          </div>
+          <div>
             <h4 style={{ color: "#fff", fontWeight: 600, fontSize: 14, marginBottom: 14, marginTop: 0 }}>Company</h4>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <Link to="/contact" style={{ color: "#9CA3AF", fontSize: 13 }}>Contact Us</Link>

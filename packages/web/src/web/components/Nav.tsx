@@ -17,6 +17,7 @@ export default function Nav() {
 
   const links = [
     { to: "/", label: "Home" },
+    { to: "/knowledge-centre", label: "Knowledge Centre" },
     { to: "/passport", label: "Start Passport" },
     { to: "/installers", label: "Installers" },
     { to: "/contact", label: "Contact" },

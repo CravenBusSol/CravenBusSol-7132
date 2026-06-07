@@ -7,6 +7,15 @@ import Installers from "./pages/installers";
 import ThankYou from "./pages/thank-you";
 import Contact from "./pages/contact";
 import Admin from "./pages/admin";
+import KnowledgeCentre from "./pages/knowledge-centre/index";
+import AirSourceHeatPump from "./pages/knowledge-centre/air-source-heat-pump";
+import GroundSourceHeatPump from "./pages/knowledge-centre/ground-source-heat-pump";
+import SolarPV from "./pages/knowledge-centre/solar-pv";
+import BatteryStorage from "./pages/knowledge-centre/battery-storage";
+import EVCharger from "./pages/knowledge-centre/ev-charger";
+import SolarThermal from "./pages/knowledge-centre/solar-thermal";
+import Insulation from "./pages/knowledge-centre/insulation";
+import MVHR from "./pages/knowledge-centre/mvhr";
 
 function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -23,6 +32,35 @@ export default function App() {
     <Switch>
       {/* Admin — no Nav/Footer */}
       <Route path="/admin" component={Admin} />
+
+      {/* Knowledge Centre */}
+      <Route path="/knowledge-centre">
+        <Layout><KnowledgeCentre /></Layout>
+      </Route>
+      <Route path="/knowledge-centre/air-source-heat-pump">
+        <Layout><AirSourceHeatPump /></Layout>
+      </Route>
+      <Route path="/knowledge-centre/ground-source-heat-pump">
+        <Layout><GroundSourceHeatPump /></Layout>
+      </Route>
+      <Route path="/knowledge-centre/solar-pv">
+        <Layout><SolarPV /></Layout>
+      </Route>
+      <Route path="/knowledge-centre/battery-storage">
+        <Layout><BatteryStorage /></Layout>
+      </Route>
+      <Route path="/knowledge-centre/ev-charger">
+        <Layout><EVCharger /></Layout>
+      </Route>
+      <Route path="/knowledge-centre/solar-thermal">
+        <Layout><SolarThermal /></Layout>
+      </Route>
+      <Route path="/knowledge-centre/insulation">
+        <Layout><Insulation /></Layout>
+      </Route>
+      <Route path="/knowledge-centre/mvhr">
+        <Layout><MVHR /></Layout>
+      </Route>
 
       {/* Main site */}
       <Route path="/">
